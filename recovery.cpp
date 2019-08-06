@@ -896,12 +896,14 @@ static bool yes_no(Device* device, const char* question1, const char* question2)
     return (chosen_item == 1);
 }
 
-#ifndef RELEASE_BUILD
 static bool ask_to_continue_unverified_install(Device* device) {
+#ifdef RELEASE_BUILD
+  return false;
+#else
   ui->SetProgressType(RecoveryUI::EMPTY);
   return yes_no(device, "Signature verification failed", "Install anyway?");
-}
 #endif
+}
 
 static bool ask_to_wipe_data(Device* device) {
     return yes_no(device, "Wipe all user data?", "  THIS CAN NOT BE UNDONE!");
@@ -1241,12 +1243,10 @@ static int apply_from_storage(Device* device, VolumeInfo& vi, bool* wipe_cache) 
   ui->UpdateScreenOnPrint(true);
   status = install_package(FUSE_SIDELOAD_HOST_PATHNAME, wipe_cache, TEMPORARY_INSTALL_FILE, false,
                            0 /*retry_count*/, true /*verify*/);
-#ifndef RELEASE_BUILD
   if (status == INSTALL_UNVERIFIED && ask_to_continue_unverified_install(device)) {
     status = install_package(FUSE_SIDELOAD_HOST_PATHNAME, wipe_cache, TEMPORARY_INSTALL_FILE, false,
                              0 /*retry_count*/, false /*verify*/);
   }
-#endif
   ui->UpdateScreenOnPrint(false);
 
   finish_sdcard_fuse(token);
@@ -1300,11 +1300,9 @@ refresh:
       sideload_wait(false);
       ui->UpdateScreenOnPrint(true);
       status = sideload_install(wipe_cache, TEMPORARY_INSTALL_FILE, true);
-#ifndef RELEASE_BUILD
       if (status == INSTALL_UNVERIFIED && ask_to_continue_unverified_install(device)) {
         status = sideload_install(wipe_cache, TEMPORARY_INSTALL_FILE, false);
       }
-#endif
       ui->UpdateScreenOnPrint(false);
     } else {
       sideload_wait(true);
